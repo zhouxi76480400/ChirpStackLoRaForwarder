@@ -1,0 +1,13 @@
+<component name="ArtifactManager">
+  <artifact type="exploded-war" name="ChirpStackLoRaForwarder:war exploded">
+    <output-path>$PROJECT_DIR$/out/artifacts/ChirpStackLoRaForwarder_war_exploded</output-path>
+    <root id="root">
+      <element id="javaee-facet-resources" facet="ChirpStackLoRaForwarder/web/Web" />
+      <element id="directory" name="WEB-INF">
+        <element id="directory" name="classes">
+          <element id="module-output" name="ChirpStackLoRaForwarder" />
+        </element>
+      </element>
+    </root>
+  </artifact>
+</component>
