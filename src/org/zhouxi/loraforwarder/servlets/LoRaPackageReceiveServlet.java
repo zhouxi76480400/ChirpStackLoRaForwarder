@@ -2,7 +2,10 @@ package org.zhouxi.loraforwarder.servlets;
 
 import com.google.gson.Gson;
 import org.zhouxi.loraforwarder.pojo.ChirpStackUPLinkObject;
+import org.zhouxi.loraforwarder.pojo.EmergencyMessageObject;
+import org.zhouxi.loraforwarder.threads.SendMessageThread;
 import org.zhouxi.loraforwarder.utils.BytesUtil;
+import org.zhouxi.loraforwarder.utils.MessageUtil;
 import org.zhouxi.loraforwarder.utils.StreamUtil;
 
 import javax.servlet.ServletException;
@@ -16,15 +19,8 @@ import java.util.Base64;
 public class LoRaPackageReceiveServlet extends MyServlet {
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        super.doGet(req, resp);
-        System.out.println("doget");
-    }
-
-    @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         super.doPost(req, resp);
-        System.out.println("被請求");
         String in_str = null;
         try {
             in_str = StreamUtil.readStreamFromInputStream(req.getInputStream());
@@ -56,17 +52,21 @@ public class LoRaPackageReceiveServlet extends MyServlet {
                         String checkSum = BytesUtil.bytesToHexString(raw_byte_last_two).toUpperCase();
                         int now_msg_count = raw_byte_first;
                         int all_msg_count = raw_byte_second;
-                        System.out.println("checkSUM>"+checkSum+"now:"+now_msg_count+"all:"+all_msg_count);
-
-
-
-                        System.out.println(raw_byte_first);
-                        System.out.println(raw_byte_second);
-//
-//                        System.out.print(raw_byte_last_two[0]);
-//                        System.out.println(raw_byte_last_two[1]);
-
-
+                        byte[] msg_array = new byte[raw_lora_data.length - 4];
+                        System.out.println("LoRaPackageReceiveServlet:checkSUM>" +
+                                checkSum + "now:" + now_msg_count + "all:" + all_msg_count);
+                        System.arraycopy(raw_lora_data, 2, msg_array, 0, raw_lora_data.length - 4);
+                        boolean isFullMessage =
+                                MessageUtil.getInstance().addAMessage(now_msg_count, all_msg_count, msg_array, checkSum);
+                        if (isFullMessage) {
+                            String full_str = MessageUtil.getInstance().getMessage(checkSum);
+                            Gson gson = new Gson();
+                            EmergencyMessageObject emergencyMessageObject =
+                                    gson.fromJson(full_str,EmergencyMessageObject.class);
+                            System.out.println("decode:" + full_str);
+                            SendMessageThread sendMessageThread = new SendMessageThread(emergencyMessageObject);
+                            sendMessageThread.start();
+                        }
                     }
                 }
             }
